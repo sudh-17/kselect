@@ -1,36 +1,36 @@
 (function (window) {
 
-  let qs = function(selector ,parent){
+let qs = function(selector ,parent){
     return (parent || document).querySelector(selector)
-  }
-  
-  let qsa = function(selector ,parent){
+    }
+    
+    let qsa = function(selector ,parent){
     return (parent || document).querySelectorAll(selector)
-  }
-  
-  let $on = function(target,type,callback,useCapture){
+    }
+    
+    let $on = function(target,type,callback,useCapture){
     target.addEventListener(type, callback, !!useCapture)
-  }
-  
-  let $delegated = function (target, selector, type, handler) {
+    }
+    
+    let $delegated = function (target, selector, type, handler) {
     function dispatchEvent(event) {
-      var targetElement = event.target
-      var potentialElements = qsa(selector, target)
-      var hasMatch = Array.prototype.indexOf.call(potentialElements, targetElement) >= 0
-  
-      if (hasMatch) {
+        var targetElement = event.target
+        var potentialElements = qsa(selector, target)
+        var hasMatch = Array.prototype.indexOf.call(potentialElements, targetElement) >= 0
+    
+        if (hasMatch) {
         handler.call(targetElement, event)
-      }
+        }
     }
     var useCapture = type === 'blur' || type === 'focus'
-  
+    
     $on(target, type, dispatchEvent, useCapture)
-  }
+    }
 
-  /**
-   * Model 
-   * @param {数据源} data 
-   */
+    /**
+     * Model 
+     * @param {数据源} data 
+     */
     function Model(data){
         this.data = data
         this.data.forEach(item => {
@@ -110,10 +110,12 @@
                         <ul class="panel-list">
                         </ul>
                     </div>
-                    <div class="panel-footer">
-                        <div class="bt-gb"><button class="cancel">取消</button></div>
-                        <div class="bt-gb"><button class="ok btn-primary">确定</button></div>
-                    </div>
+                    ${  this.multiple ? 
+                        '<div class="panel-footer"><div class="bt-gb"><button class="cancel">取消</button></div>'
+                        +'<div class="bt-gb"><button class="ok btn-primary">确定</button></div>'
+                        +'</div>'
+                        : ''
+                    }
                 </div>
                 <div class="backdrop"></div>
             </div>`
@@ -127,10 +129,10 @@
     
     View.prototype.template = function (item) {
         let type = this.multiple ? 'checkbox' : 'radio'
-        let tmp = `<li class="panel-item" data-id="${item.key}">
-                <span>${item.value}</span>
-                <input name="item" key="${item.key}" value="${item.value}" class="check" type="${type}" ${item.checked ? 'checked' : ''}>
-                <label class="check-icon ${ this.multiple ? 'rect': 'circle' }"></label>
+        let tmp = `<li class="panel-item item-zone" data-id="${item.key}">
+                <span class="item-zone">${item.value}</span>
+                <input class="check item-zone" name="item" key="${item.key}" value="${item.value}" type="${type}" ${item.checked ? 'checked' : ''}>
+                <label class="item-zone check-icon ${ this.multiple ? 'rect': 'circle' }"></label>
             </li>`
         return tmp
     }
@@ -156,7 +158,7 @@
     }
     
     View.prototype.tag = function (item) {
-        let tmp = `<li data-id="${ item.key }"><label data-id="${item.key}">X</label><span class="tag" title="${item.value}">${item.value}</span></li>`
+        let tmp = `<li class="tag" data-id="${ item.key }"><label data-id="${item.key}">X</label><span class="tag" title="${item.value}">${item.value}</span></li>`
         return tmp
     }
     
@@ -165,7 +167,7 @@
     }
     
     View.prototype.removeTag = function (key) {
-        let el = qs('[data-id="' + key + '"]')
+        let el = qs('.tag[data-id="' + key + '"]')
         this.content.removeChild(el)
     }
     
@@ -229,6 +231,30 @@
         })
     }
 
+    View.prototype.itemAction = function (callback) {
+        let self = this
+        $delegated(this.list, '.item-zone', 'click', function(e) {
+            let dom = null
+            let el = e.target
+            if (el.tagName === 'LI') {
+                dom = el
+            } else {
+                dom = el.parentNode
+                
+            }
+            let btnCheck = qs('input[name="item"]', dom)
+            if (self.multiple) {
+                btnCheck.checked = !btnCheck.checked
+            } else {
+                if (!btnCheck.checked) {
+                    btnCheck.checked = !btnCheck.checked
+                    let val = qs('span', dom).innerHTML
+                    callback.call(this, dom.getAttribute('data-id'), val)
+                }
+            }
+        })
+    }
+
     View.prototype.setWidth = function (value) {
         this.content.style.width = value
     }
@@ -247,79 +273,84 @@
      * @param {多选} multiple 
      */
     function Controller (dom, data, multiple = false) {
-      this.model = new Model(data)
-      this.view = new View(dom, multiple)
-      this.multiple = multiple
-      this.initAction()
+        this.model = new Model(data)
+        this.view = new View(dom, multiple)
+        this.multiple = multiple
+        this.initAction()
     }
     //加载数据
     Controller.prototype.loadData = function () {
-      let data = this.multiple ? this.model.getUnchecked() : this.model.getAll()
-      this.view.renderList(data)
+        let data = this.multiple ? this.model.getUnchecked() : this.model.getAll()
+        this.view.renderList(data)
     }
     //初始化动作
     Controller.prototype.initAction = function () {
-      let self = this
-      this.view.contentAction(function(e){
+        let self = this
+        this.view.contentAction(function(e){
         self.loadData()
         self.view.modal('show')
         self.view.setSearchText('')
-      })
-      this.view.searchAction(function(keyword){
+        })
+        this.view.searchAction(function(keyword){
         let data = self.model.search(keyword, self.multiple)
         self.view.renderList(data)
-      })
-      this.view.okAction(function (data) {
+        })
+        this.view.okAction(function (data) {
         if(data && data.length > 0) {
-          if (self.multiple == false) {
+            if (self.multiple == false) {
             self.model.checked(data[0].key)
             self.view.setValue(data[0].value)
-          } else {
+            } else {
             self.model.multiChecked(data)
             data.forEach(it => {
-              self.view.appendTag(it)
+                self.view.appendTag(it)
             })
-          }
+            }
         }
         self.view.modal('hide')
-      })
-      this.view.cancelAction(function () {
+        })
+        this.view.cancelAction(function () {
         self.view.modal('hide')
-      })
-      this.view.tagAction(function (id) {
+        })
+        this.view.tagAction(function (id) {
         self.view.removeTag(id)
         self.model.unChecked(id)
-      })
+        })
+        this.view.itemAction(function (key, value) {
+        self.model.checked(key)
+        self.view.setValue(value)
+        self.view.modal('hide')
+        })
     }
     
     Controller.prototype.getValue = function () {
-      let value = []
-      let src = this.model.getChecked()
-      src.forEach(item => {
+        let value = []
+        let src = this.model.getChecked()
+        src.forEach(item => {
         value.push(item.value)
-      })
-      if (this.multiple) {
+        })
+        if (this.multiple) {
         return value
-      } else {
+        } else {
         return value.join('')
-      }
+        }
     }
-  
+    
     Controller.prototype.setOption = function (opt) {
-      let option = {
+        let option = {
         width: '80vw',
         ...opt
-      }
-      this.view.setWidth(option.width)
-      if (option.height) {
+        }
+        this.view.setWidth(option.width)
+        if (option.height) {
         this.view.setHeight(option.height)
-      } 
+        } 
     }
-  
-  
-  function init (dom, data, multiple = false) {
+    
+    
+    function init (dom, data, multiple = false) {
     return new Controller(dom, data, multiple)
-  }
+    }
 
   window.kselect = {}
   window.kselect.init = init
