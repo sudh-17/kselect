@@ -127,13 +127,13 @@
   padding: 8px 2px 2px 2px;
   border-top: 1px solid #ddd;
   height: 35px;
-  text-align: center;
+  justify-content: flex-end;
 }
 .wrapper .panel .panel-footer div {
   box-sizing: border-box;
 }
 .wrapper .panel .panel-footer .bt-gb {
-  width: 50%;
+  max-width: 75px;
   flex: 1;
   box-sizing: border-box;
 }

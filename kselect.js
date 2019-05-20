@@ -110,12 +110,10 @@ let qs = function(selector ,parent){
                         <ul class="panel-list">
                         </ul>
                     </div>
-                    ${  this.multiple ? 
-                        '<div class="panel-footer"><div class="bt-gb"><button class="cancel">取消</button></div>'
-                        +'<div class="bt-gb"><button class="ok btn-primary">确定</button></div>'
-                        +'</div>'
-                        : ''
-                    }
+                    <div class="panel-footer">
+                      <div class="bt-gb"><button class="cancel">取消</button></div>
+                      ${ this.multiple ? '<div class="bt-gb"><button class="ok btn-primary">确定</button></div>' : '' }
+                    </div>
                 </div>
                 <div class="backdrop"></div>
             </div>`
